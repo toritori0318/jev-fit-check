@@ -2,21 +2,23 @@
 
 「この判断に Jev を使うべきか」を 8 つの問いで決めるエージェントスキル。Claude Code と Codex で使える。
 
-[Jev](https://typesafe.ai/) は TypeSafe AI の判断専用モデルで、文章を生成せず、渡した選択肢の中から確率付きで選ぶ。速くて安いが、使いどころを外すと「自信ありげに間違える」。このスキルは、ある分類・ルーティング・スコアリング処理について、**コード / Jev 単独 / Jev → LLM・人のカスケード / LLM** のどれが適切かを判定し、Jev と出た場合は設計テンプレ（質問の分解・選択肢・state・閾値・正解ラベル・フォールバック・データ保護・監査）まで出す。
+[Jev](https://typesafe.ai/) は TypeSafe AI の判断専用モデルで、文章を生成せず、渡した選択肢の中から確率付きで選ぶ。速くて安いが、使いどころを外すと自信ありげに間違える。
 
-非公式のコミュニティ製で、TypeSafe AI とは無関係。本文の数字はすべて公開されている第三者の検証から取り、出典を `SKILL.md` の末尾に載せている。
+このスキルは、分類・ルーティング・スコアリングの処理を **コード / Jev 単独 / Jev → LLM・人のカスケード / LLM** のどれで作るべきかを判定する。Jev と出た場合は、質問の分解や閾値、データ保護まで含めた設計テンプレも出す。
+
+非公式のコミュニティ製で、TypeSafe AI とは無関係。本文の数字はすべて公式ドキュメントと第三者の公開検証から取り、出典を `SKILL.md` の末尾に載せている。
 
 ## できること
 
-- **使うべきかの判定**: Q0〜Q3 のゲート（ルールで書けるか／候補を列挙できるか／根拠が入力の中にあるか／量か速さが価値になるか）で、外れたらそこで結論
-- **使う形の設計**: Q4〜Q7（確信度で損害を抑えられるか／正解ラベルを作れるか／敵対的な入力が混ざるか／個人情報が入るか）で、カスケードの形・shadow mode・注入対策・データ保護を決める
-- **精度を上げるコツ**: 質問・選択肢・state・閾値の 4 層。効果が数字で出たものだけ（例: 大きな問いを 5 問に分解して 62.6% → 95.0%、閾値を 0.5 から 0.80 に直して 76% → 87%）
-- **既存の Jev 利用箇所のレビュー**: 11 の観点で抜けを指摘
-- **セキュリティが絡む判断の制約**: Jev を唯一の門にしない、止める側に倒す、監査ログ、モデル版の固定
+- **使うべきかの判定**: 4 つの問いで、コード・LLM・Jev のどれにするかを決める
+- **使う形の設計**: さらに 4 つの問いで、カスケードの形や注入対策、個人情報の扱いを決める
+- **精度の改善**: 質問・選択肢・state・閾値の直し方。効果が数字で確かめられたものだけを載せている
+- **既存の Jev 利用箇所のレビュー**: 11 の観点で抜けを指摘する
+- **セキュリティが絡む判断の制約**: Jev を唯一の門にしない、エラー時は止める側に倒す、など
 
 ## インストール
 
-スキル本体は `skills/jev-fit-check/SKILL.md` の 1 ファイル。入れ方は 3 つあり、どれでも中身は同じ。
+入れ方は 3 つあり、どれでも中身は同じ。**どれか 1 つだけ**にする。両方入れると同じスキルが 2 つ出てきて、二重に反応する。
 
 ### Claude Code（プラグインとして。更新も受け取れる）
 
@@ -30,8 +32,9 @@ claude plugin install jev-fit-check@toritori0318
 ### Claude Code（ファイルをコピーするだけ）
 
 ```bash
-git clone --depth 1 https://github.com/toritori0318/jev-fit-check.git /tmp/jev-fit-check
-cp -r /tmp/jev-fit-check/skills/jev-fit-check ~/.claude/skills/
+tmp=$(mktemp -d)
+git clone --depth 1 https://github.com/toritori0318/jev-fit-check.git "$tmp"
+mkdir -p ~/.claude/skills && cp -r "$tmp/skills/jev-fit-check" ~/.claude/skills/
 ```
 
 Claude Code を起動し直すと **`/jev-fit-check`** で呼べる。プロジェクト単位で入れるなら `~/.claude/skills/` の代わりに `<プロジェクト>/.claude/skills/` にコピーする。更新は手動でコピーし直す。
@@ -39,11 +42,12 @@ Claude Code を起動し直すと **`/jev-fit-check`** で呼べる。プロジ�
 ### Codex
 
 ```bash
-git clone --depth 1 https://github.com/toritori0318/jev-fit-check.git /tmp/jev-fit-check
-cp -r /tmp/jev-fit-check/skills/jev-fit-check ~/.agents/skills/
+tmp=$(mktemp -d)
+git clone --depth 1 https://github.com/toritori0318/jev-fit-check.git "$tmp"
+mkdir -p ~/.agents/skills && cp -r "$tmp/skills/jev-fit-check" ~/.agents/skills/
 ```
 
-ユーザー全体なら `~/.agents/skills/`、リポジトリ単位なら `<リポジトリ>/.agents/skills/`。Codex では **`$jev-fit-check`** で呼ぶか、`/skills` の一覧から選ぶ。Codex が読むのは frontmatter の `name` と `description` で、`allowed-tools` は Claude Code 向けの指定なので無視される（Codex はツールを制限せずに動く）。
+ユーザー全体なら `~/.agents/skills/`、リポジトリ単位なら `<リポジトリ>/.agents/skills/`。Codex では **`$jev-fit-check`** で呼ぶか、`/skills` の一覧から選ぶ。frontmatter の `allowed-tools` は Claude Code 用の設定で、Codex では無視される。
 
 ## 使い方
 
@@ -65,17 +69,16 @@ cp -r /tmp/jev-fit-check/skills/jev-fit-check ~/.agents/skills/
 /jev-fit-check Jev の分類精度が 70% で頭打ち。質問はこう書いている: 「この問い合わせの深刻度は？」
 ```
 
-返ってくるのは、判定（コード / Jev 単独 / Jev → LLM・人 / LLM）と、どの問いで決まったか。Jev と出た場合は設計テンプレが続く。「これ Jev でできる？」「Jev の精度が出ない」のような言い方でも起動する（Claude Code の場合。Codex は `$jev-fit-check` で明示的に呼ぶのが確実）。
+返ってくるのは、判定（コード / Jev 単独 / Jev → LLM・人 / LLM）と、どの問いで決まったか。Jev と出た場合は設計テンプレが続く。
+
+Claude Code では「これ Jev でできる？」「Jev の精度が出ない」のような言い方でも起動する。Codex では `$jev-fit-check` で明示的に呼ぶのが確実。
 
 ### 判定の例
 
-「問い合わせを 4 カテゴリに振り分け、解約の兆候を拾う。月 3,000 件」なら、こう進む。
+「EC の問い合わせを返品・配送・在庫・定期解約・その他に振り分け、解約の兆候を拾う。月 3,000 件」なら、こう進む（全文は `SKILL.md` の「判定の例」）。
 
-- Q0: 「お金を戻していただけないでしょうか」のような間接表現は正規表現で拾えない → 通過
-- Q1: 4 カテゴリ＋「不明」で列挙できる。解約兆候は はい／いいえ → 通過
-- Q2: 根拠は問い合わせ本文にある → 通過
-- Q3: 月 3,000 件を全件見たい → 通過
-- Q4: 振り分けの誤りは人が直せる。解約兆候は見逃しが痛いので、否定側だけ Jev で確定し、残りは人が見る → **Jev → 人のカスケード**
+- Q0〜Q3: 間接表現が多く正規表現では拾えない。候補は列挙でき、根拠は本文にあり、件数も多い → すべて通過
+- Q4: 振り分けの誤りは人が直せる。解約兆候は見逃しが痛いので、「兆候なし」だけ Jev で確定し、残りは人が見る → **Jev → 人のカスケード**
 - Q7: 本文に名前・住所が入るので、送る前に伏せる
 
 ## 使わない場面
