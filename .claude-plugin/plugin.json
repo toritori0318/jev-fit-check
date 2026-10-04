@@ -1,0 +1,13 @@
+{
+  "name": "jev-fit-check",
+  "description": "ある判断に Jev（TypeSafe の判断専用モデル）を使うべきかを 8 つの問いで判定し、使うなら設計テンプレまで出す。既存の Jev 利用箇所のレビューと精度改善にも使う",
+  "version": "0.1.0",
+  "author": {
+    "name": "toritori0318",
+    "url": "https://github.com/toritori0318"
+  },
+  "homepage": "https://github.com/toritori0318/jev-fit-check",
+  "repository": "https://github.com/toritori0318/jev-fit-check",
+  "license": "MIT",
+  "keywords": ["jev", "typesafe", "decision-model", "skill", "claude-code", "codex"]
+}

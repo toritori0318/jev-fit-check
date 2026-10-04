@@ -1,0 +1,17 @@
+{
+  "name": "toritori0318",
+  "description": "toritori0318 のスキル・プラグイン",
+  "owner": {
+    "name": "toritori0318",
+    "url": "https://github.com/toritori0318"
+  },
+  "plugins": [
+    {
+      "name": "jev-fit-check",
+      "source": ".",
+      "description": "ある判断に Jev を使うべきかを 8 つの問いで判定し、使うなら設計テンプレまで出す",
+      "category": "ai-engineering",
+      "tags": ["jev", "typesafe", "decision-model"]
+    }
+  ]
+}
